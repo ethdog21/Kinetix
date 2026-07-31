@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kinetix — AI Weightlifting Coach</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #060710;
+    --bg-elevated: rgba(255,255,255,0.045);
+    --bg-elevated-2: rgba(255,255,255,0.075);
+    --steel: #8B8FA3;
+    --steel-dim: #464A5C;
+    --accent: #8B5CF6;
+    --accent2: #22D3EE;
+    --accent-soft: rgba(139,92,246,0.12);
+    --accent-dim: #7C3AED;
+    --text: #F5F5F7;
+    --text-dim: #9497AB;
+    --success: #34E4A0;
+    --success-soft: rgba(52,228,160,0.1);
+    --warn: #22D3EE;
+    --warn-soft: rgba(34,211,238,0.1);
+    --major: #FF5C7A;
+    --major-soft: rgba(255,92,122,0.1);
+    --border: rgba(255,255,255,0.09);
+    --radius: 22px;
+    --glow: 0 0 0 1px rgba(255,255,255,0.06), 0 20px 40px rgba(0,0,0,0.5), 0 0 40px rgba(139,92,246,0.08);
+    --shadow: var(--glow);
+  }
+
+  
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin:0; padding:0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed; inset: -10%;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(139,92,246,0.28), transparent 40%),
+      radial-gradient(circle at 85% 25%, rgba(34,211,238,0.22), transparent 38%),
+      radial-gradient(circle at 50% 90%, rgba(139,92,246,0.16), transparent 45%);
+    filter: blur(60px);
+    z-index: -2;
+    pointer-events: none;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
+    background-size: 32px 32px;
+    z-index: -1;
+    pointer-events: none;
+    mask-image: radial-gradient(circle at 50% 0%, black, transparent 75%);
+  }
+
+  h1,h2,h3, .display {
+    font-family: 'Space Grotesk', sans-serif;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .mono { font-family: 'JetBrains Mono', monospace; }
+
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    min-height: 100vh;
+    padding-bottom: 90px;
+    position: relative;
+  }
+
+  /* ---------- TOP BAR ---------- */
+  .topbar {
+    padding: 20px 20px 8px;
+    display:flex; align-items:center; justify-content: space-between;
+  }
+  .topbar .wordmark {
+    font-size: 16px; display:flex; align-items:center; gap:8px; font-family:'Space Grotesk',sans-serif; font-weight:700;
+    background: linear-gradient(90deg, #C4B5FD, #67E8F9);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .topbar .dot { width:7px; height:7px; border-radius:50%; background: var(--accent2); box-shadow: 0 0 10px var(--accent2), 0 0 20px var(--accent2); }
+  .topbar .section-title { font-size: 18px; }
+  .avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--accent); color:#fff;
+    display:flex; align-items:center; justify-content:center; font-family:'Space Grotesk',sans-serif;
+    font-weight:700; font-size:13px; cursor:pointer; border:none; flex-shrink:0;
+  }
+
+  .view { padding: 8px 20px 20px; display:none; }
+  .view.active { display:block; }
+
+  /* ---------- HOME ---------- */
+  .greeting { font-size: 26px; margin: 6px 0 4px; }
+  .greeting-sub { color: var(--text-dim); font-size: 14px; margin-bottom: 22px; }
+
+  .stat-grid { display:grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 22px; }
+  .stat-card {
+    background: var(--bg-elevated); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 18px;
+    padding: 16px 10px; text-align:center; box-shadow: var(--shadow);
+  }
+  .stat-card .num {
+    font-family:'Space Grotesk',sans-serif; font-size: 24px; font-weight:700;
+    background: linear-gradient(90deg, #C4B5FD, #67E8F9); -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .stat-card .label { font-size: 10px; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; }
+
+  .cta-card {
+    background: linear-gradient(135deg, #8B5CF6, #6D28D9 55%, #22D3EE 130%);
+    border-radius: var(--radius); padding: 24px;
+    color: #fff; margin-bottom: 26px; cursor: pointer;
+    box-shadow: 0 20px 50px rgba(139,92,246,0.35), 0 0 0 1px rgba(255,255,255,0.08);
+    position: relative; overflow: hidden;
+  }
+  .cta-card::after {
+    content:''; position:absolute; inset:0;
+    background: radial-gradient(circle at 90% -10%, rgba(255,255,255,0.35), transparent 55%);
+  }
+  .cta-card h3 { font-size: 18px; margin-bottom: 4px; }
+  .cta-card p { font-size: 13px; opacity: 0.85; margin: 0 0 14px; }
+  .cta-card .cta-arrow { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:14px; }
+
+  .section-label {
+    font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim);
+    font-weight: 600; margin-bottom: 12px;
+  }
+
+  .empty-state {
+    text-align:center; padding: 30px 20px; color: var(--text-dim); font-size: 13px;
+    background: var(--bg-elevated); border: 1px dashed var(--border); border-radius: 14px;
+  }
+
+  /* ---------- HISTORY ---------- */
+  .history-item {
+    background: var(--bg-elevated); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .history-item-top { display:flex; align-items:center; justify-content:space-between; }
+  .history-item-top .ex-name { font-weight:600; font-size:14px; }
+  .history-item-top .ex-date { font-size:11px; color: var(--text-dim); font-family:'JetBrains Mono',monospace; }
+  .severity-dots { display:flex; gap:4px; margin-top:6px; }
+  .sdot { width:6px; height:6px; border-radius:50%; }
+  .sdot.good { background: var(--success); }
+  .sdot.minor { background: var(--warn); }
+  .sdot.major { background: var(--major); }
+  .history-detail { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); display:none; }
+  .history-item.expanded .history-detail { display:block; }
+  .history-detail .overall-text { font-size: 13px; color: var(--text); margin-bottom: 8px; line-height:1.4; }
+  .mini-cue { font-size: 12px; color: var(--text-dim); margin-bottom: 4px; padding-left: 10px; position:relative; }
+  .mini-cue::before { content: ''; position:absolute; left:0; top:6px; width:4px; height:4px; border-radius:50%; background: var(--steel); }
+
+  /* ---------- PROFILE ---------- */
+  .profile-card { background: var(--bg-elevated); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border:1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 18px; box-shadow: var(--shadow); }
+  .field-label { display:block; font-size: 12px; font-weight:600; color: var(--text-dim); text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
+  .text-input {
+    width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); font-family:'Inter',sans-serif; font-size:14px; margin-bottom: 12px;
+  }
+  .text-input:focus { outline: 2px solid var(--accent); outline-offset:1px; border-color: var(--accent); }
+  .theme-toggle-row { display:flex; gap: 10px; margin-bottom: 4px; }
+  .theme-opt {
+    flex:1; padding: 12px; border-radius: 12px; border: 1.5px solid var(--border);
+    background: var(--bg); color: var(--text-dim); cursor:pointer; font-family:'Inter',sans-serif;
+    font-size: 13px; font-weight: 600; text-align:center; transition: all 0.15s ease;
+  }
+  .theme-opt.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .swatch-row { display:flex; gap: 12px; }
+  .swatch { width: 34px; height: 34px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.15s ease; }
+  .swatch:hover { transform: scale(1.08); }
+  .swatch.active { border-color: var(--text); }
+
+  /* ---------- BOTTOM NAV ---------- */
+  .bottom-nav {
+    position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+    width: calc(100% - 24px); max-width: 456px; background: rgba(15,16,24,0.75);
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid var(--border); border-radius: 22px;
+    display:flex; justify-content: space-around; padding: 10px 6px; z-index: 50;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .nav-btn {
+    background:none; border:none; display:flex; flex-direction:column; align-items:center; gap:3px;
+    color: var(--text-dim); cursor:pointer; font-family:'Inter',sans-serif; font-size:10px; font-weight:600;
+    padding: 4px 10px; letter-spacing: 0.02em; text-transform: uppercase;
+  }
+  .nav-btn .icon { font-size: 19px; }
+  .nav-btn.active { color: var(--accent2); text-shadow: 0 0 12px rgba(34,211,238,0.6); }
+
+  /* ---------- ONBOARDING ---------- */
+  .overlay {
+    position: fixed; inset: 0; background: rgba(10,11,14,0.55);
+    display:flex; align-items:center; justify-content:center; padding: 20px; z-index: 100; backdrop-filter: blur(4px);
+  }
+  .modal-card {
+    width: 100%; max-width: 380px; background: var(--bg-elevated); border-radius: var(--radius);
+    padding: 32px 28px; box-shadow: var(--shadow); border: 1px solid var(--border); position:relative;
+  }
+  .modal-card h2 { font-size: 22px; margin-bottom: 8px; }
+  .modal-card p.desc { color: var(--text-dim); font-size: 14px; margin: 0 0 22px; line-height:1.5; }
+  .modal-card .btn-primary { width:100%; padding:13px; font-size:15px; }
+  .step-dots { display:flex; gap:6px; margin-bottom: 18px; }
+  .step-dot { width: 22px; height: 4px; border-radius: 2px; background: var(--border); }
+  .step-dot.active { background: var(--accent); }
+  .goal-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .goal-opt {
+    padding: 16px 10px; border-radius: 12px; border: 1.5px solid var(--border); background: var(--bg);
+    color: var(--text-dim); cursor:pointer; font-size:13px; font-weight:600; text-align:center;
+  }
+  .goal-opt.active { border-color: var(--accent); color: var(--accent); background: var(--accent-soft); }
+  .close-modal-btn { position:absolute; top:16px; right:16px; background:none; border:none; color: var(--text-dim); font-size:20px; cursor:pointer; }
+
+  /* ---------- EXERCISE PICKER (Analyze view) ---------- */
+  .cat-tabs { display:flex; gap: 6px; background: var(--bg-elevated-2); padding: 4px; border-radius: 10px; width: fit-content; margin: 0 0 14px; }
+  .cat-tab { font-family:'JetBrains Mono',monospace; font-size: 11px; letter-spacing:0.05em; text-transform:uppercase; padding: 7px 14px; border-radius: 7px; border:none; background: transparent; color: var(--text-dim); cursor:pointer; }
+  .cat-tab.active { background: var(--bg-elevated); color: var(--accent); }
+  .lift-select { display:flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+  .lift-pill {
+    font-family:'JetBrains Mono',monospace; font-size: 12px; letter-spacing:0.03em; text-transform:uppercase;
+    padding: 9px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-elevated);
+    color: var(--text-dim); cursor:pointer; transition: all 0.15s ease;
+  }
+  .lift-pill:hover { border-color: var(--steel); color: var(--text); }
+  .lift-pill.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .lift-pill:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  .capture-card { width: 100%; background: var(--bg-elevated); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); }
+
+  .mode-toggle { display:flex; gap: 6px; background: var(--bg); padding: 4px; border-radius: 10px; margin-bottom: 16px; width: fit-content; }
+  .mode-btn { font-family:'Inter',sans-serif; font-size:13px; font-weight:600; padding: 8px 14px; border-radius: 7px; border:none; background: transparent; color: var(--text-dim); cursor:pointer; }
+  .mode-btn.active { background: var(--bg-elevated-2); color: var(--text); }
+
+  video.preview { width: 100%; max-height: 320px; background: #000; border-radius: 10px; display:block; object-fit: contain; }
+
+  .drop-zone { border: 1.5px dashed var(--steel-dim); border-radius: 10px; padding: 40px 16px; text-align:center; cursor:pointer; transition: border-color 0.15s ease, background 0.15s ease; }
+  .drop-zone:hover, .drop-zone.dragover { border-color: var(--accent); background: var(--accent-soft); }
+  .drop-zone p { margin:0; color: var(--text-dim); font-size: 13px; }
+  .drop-zone .icon { font-size: 26px; margin-bottom: 10px; opacity: 0.8; }
+  .drop-zone strong { color: var(--text); }
+  input[type=file] { display:none; }
+
+  .record-controls { display:flex; gap: 10px; margin-top: 14px; justify-content:center; }
+
+  .btn { font-family:'Inter',sans-serif; font-weight:600; font-size:14px; padding: 12px 20px; border-radius: 9px; border:none; cursor:pointer; transition: transform 0.1s ease, opacity 0.15s ease; }
+  .btn:active { transform: scale(0.97); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(90deg, #8B5CF6, #6D28D9); color: #FFFFFF;
+    box-shadow: 0 8px 24px rgba(139,92,246,0.4);
+  }
+  .btn-primary:hover:not(:disabled) { box-shadow: 0 8px 30px rgba(139,92,246,0.6); }
+  .btn-ghost { background: var(--bg-elevated-2); color: var(--text); border: 1px solid var(--border); }
+  .btn-ghost:hover:not(:disabled) { border-color: var(--steel); }
+  .btn-danger { background: var(--major-soft); color: var(--major); border: 1px solid var(--major); }
+
+  .analyze-row { display:flex; align-items:center; justify-content: space-between; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+  .file-info { color: var(--text-dim); font-size: 12px; font-family:'JetBrains Mono',monospace; }
+
+  .loading-block { display:flex; flex-direction: column; align-items:center; gap: 14px; padding: 34px 0 10px; }
+  .spinner { width: 32px; height: 32px; border-radius: 50%; border: 3px solid var(--bg-elevated-2); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { color: var(--text-dim); font-size: 12px; font-family:'JetBrains Mono',monospace; }
+
+  .results { margin-top: 22px; animation: fadeUp 0.4s ease; }
+  @keyframes fadeUp { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform: translateY(0); } }
+
+  .overall { font-size: 16px; line-height:1.5; padding: 16px 18px; background: var(--bg); border-left: 3px solid var(--accent); border-radius: 0 8px 8px 0; margin-bottom: 16px; }
+
+  .cue { display:flex; gap: 12px; padding: 14px 16px; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 8px; }
+  .cue-badge { font-family:'JetBrains Mono',monospace; font-size: 10px; text-transform:uppercase; letter-spacing:0.05em; padding: 3px 8px; border-radius: 5px; height: fit-content; white-space: nowrap; }
+  .cue-badge.good { background: var(--success-soft); color: var(--success); }
+  .cue-badge.minor { background: var(--warn-soft); color: var(--warn); }
+  .cue-badge.major { background: var(--major-soft); color: var(--major); }
+  .cue-body strong { display:block; font-size: 14px; margin-bottom:2px; }
+  .cue-body span { color: var(--text-dim); font-size: 13px; line-height:1.4; }
+
+  .encouragement { margin-top: 14px; padding: 14px 16px; background: var(--success-soft); border-radius: 10px; color: var(--success); font-size: 13px; }
+  .reset-row { margin-top: 18px; text-align:center; }
+  .error-box { margin-top: 16px; padding: 14px 16px; background: var(--major-soft); border: 1px solid var(--major); border-radius: 10px; color: var(--text); font-size: 13px; }
+
+  @media (prefers-reduced-motion: reduce) { .results, .spinner { animation: none !important; } }
+
+  .guide-grid { display:grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .guide-card {
+    background: var(--bg-elevated); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: 16px; padding: 16px 14px; cursor: pointer;
+    box-shadow: var(--shadow); transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .guide-card:hover { transform: translateY(-2px); box-shadow: 0 20px 40px rgba(139,92,246,0.18); }
+  .guide-card-icon { width: 34px; height: 34px; margin-bottom: 10px; }
+  .guide-card-name { font-size: 13px; font-weight: 600; }
+  .guide-detail-icon { width: 56px; height: 56px; margin-bottom: 14px; }
+  .guide-step {
+    display:flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; color: var(--text-dim); line-height: 1.5;
+  }
+  .guide-step:last-child { border-bottom: none; }
+  .guide-step .step-num {
+    font-family:'JetBrains Mono',monospace; font-size: 11px; color: var(--accent2); flex-shrink:0; padding-top: 1px;
+  }
+
+  .plan-cta {
+    background: var(--bg-elevated); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 22px;
+    margin-bottom: 26px; cursor: pointer; box-shadow: var(--shadow);
+  }
+  .plan-cta h3 { font-size: 17px; margin-bottom: 4px; }
+  .plan-cta p { font-size: 13px; color: var(--text-dim); margin: 0 0 12px; }
+  .plan-cta-arrow { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:13px; color: var(--accent2); }
+
+  .progress-bars { display:flex; align-items:flex-end; gap: 8px; height: 90px; padding: 14px 12px 0; background: var(--bg-elevated); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); }
+  .progress-bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap: 6px; }
+  .progress-bar-fill { width: 100%; border-radius: 6px 6px 0 0; background: linear-gradient(180deg, #22D3EE, #8B5CF6); min-height: 3px; }
+  .progress-bar-label { font-size: 9px; color: var(--text-dim); font-family:'JetBrains Mono',monospace; text-transform:uppercase; }
+
+  .plan-overlay-content { max-height: 60vh; overflow-y: auto; }
+  .plan-day { margin-bottom: 16px; }
+  .plan-day-title { font-family:'Space Grotesk',sans-serif; font-weight:600; font-size: 14px; color: var(--accent2); margin-bottom: 8px; }
+  .plan-exercise-row { display:flex; justify-content:space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .plan-exercise-row:last-child { border-bottom:none; }
+  .plan-exercise-name { color: var(--text); }
+  .plan-exercise-sets { color: var(--text-dim); font-family:'JetBrains Mono',monospace; font-size: 12px; }
+  .plan-form-row { margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<!-- ONBOARDING OVERLAY -->
+<div class="overlay" id="onboardOverlay" style="display:none;">
+  <div class="modal-card">
+    <div class="step-dots">
+      <div class="step-dot active" data-step="1"></div>
+      <div class="step-dot" data-step="2"></div>
+    </div>
+
+    <div id="onboardStep1">
+      <h2>Welcome to Kinetix</h2>
+      <p class="desc">What should we call you?</p>
+      <label class="field-label" for="nameInput">Your name</label>
+      <input class="text-input" id="nameInput" type="text" placeholder="e.g. Ethan" />
+      <button class="btn btn-primary" id="step1NextBtn">Continue &rarr;</button>
+    </div>
+
+    <div id="onboardStep2" style="display:none;">
+      <h2>What's your focus?</h2>
+      <p class="desc">Pick what you train most — helps us set up your dashboard.</p>
+      <div class="goal-grid" id="goalGrid">
+        <button class="goal-opt" data-goal="Push">Push</button>
+        <button class="goal-opt" data-goal="Pull">Pull</button>
+        <button class="goal-opt" data-goal="Legs">Legs</button>
+        <button class="goal-opt" data-goal="All">A bit of all</button>
+      </div>
+      <button class="btn btn-primary" id="finishOnboardBtn">Start training &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="wordmark"><span class="dot"></span> <span id="topbarTitle">Home</span></div>
+    <button class="avatar" id="avatarBtn" title="Profile" aria-label="Profile">?</button>
+  </div>
+
+  <!-- HOME VIEW -->
+  <div class="view active" id="view-home">
+    <h1 class="greeting" id="homeGreeting">Hey there</h1>
+    <p class="greeting-sub">Ready to train smarter today?</p>
+
+    <div class="stat-grid">
+      <div class="stat-card"><div class="num" id="statTotal">0</div><div class="label">Sessions</div></div>
+      <div class="stat-card"><div class="num" id="statStreak">0</div><div class="label">Day streak</div></div>
+      <div class="stat-card"><div class="num" id="statFocus">—</div><div class="label">Top focus</div></div>
+    </div>
+
+    <div class="cta-card" id="ctaAnalyze">
+      <h3>Analyze a lift</h3>
+      <p>Upload or record a rep and get instant form feedback</p>
+      <div class="cta-arrow">Start now &rarr;</div>
+    </div>
+
+    <div class="plan-cta" id="ctaPlan">
+      <h3>Get a workout plan</h3>
+      <p>A personalized plan built around your goal and schedule</p>
+      <div class="plan-cta-arrow">Generate &rarr;</div>
+    </div>
+
+    <div class="section-label" style="margin-top:26px;">Your progress</div>
+    <div id="progressChart"></div>
+
+    <div class="section-label">Recent activity</div>
+    <div id="recentList"></div>
+  </div>
+
+  <!-- ANALYZE VIEW -->
+  <div class="view" id="view-analyze">
+    <div class="cat-tabs" id="catTabs">
+      <button class="cat-tab active" data-cat="Push">Push</button>
+      <button class="cat-tab" data-cat="Pull">Pull</button>
+      <button class="cat-tab" data-cat="Legs">Legs</button>
+    </div>
+    <div class="lift-select" id="liftSelect"></div>
+
+    <div class="capture-card">
+      <div class="mode-toggle" id="modeToggle">
+        <button class="mode-btn active" data-mode="upload">Upload video</button>
+        <button class="mode-btn" data-mode="record">Record now</button>
+      </div>
+
+      <div id="uploadPane">
+        <div class="drop-zone" id="dropZone">
+          <div class="icon">&#8593;</div>
+          <p><strong>Tap to choose a video</strong><br/>or drag one in — one clean rep is plenty</p>
+        </div>
+        <input type="file" id="fileInput" accept="video/*" />
+      </div>
+
+      <div id="recordPane" style="display:none;">
+        <video id="liveVideo" class="preview" autoplay muted playsinline></video>
+        <div class="record-controls">
+          <button class="btn btn-primary" id="startRecBtn">&#9679; Start recording</button>
+          <button class="btn btn-danger" id="stopRecBtn" style="display:none;">&#9632; Stop</button>
+        </div>
+      </div>
+
+      <div id="previewWrap" style="display:none; margin-top:14px;">
+        <video id="previewVideo" class="preview" controls playsinline></video>
+      </div>
+
+      <div class="analyze-row" id="analyzeRow" style="display:none;">
+        <span class="file-info" id="fileInfo"></span>
+        <div style="display:flex; gap:10px;">
+          <button class="btn btn-ghost" id="clearBtn">Clear</button>
+          <button class="btn btn-primary" id="analyzeBtn">Analyze &rarr;</button>
+        </div>
+      </div>
+
+      <div id="loadingBlock" class="loading-block" style="display:none;">
+        <div class="spinner"></div>
+        <div class="loading-text" id="loadingText">READING FRAMES...</div>
+      </div>
+
+      <div id="errorBox" class="error-box" style="display:none;"></div>
+      <div id="results" class="results" style="display:none;"></div>
+    </div>
+  </div>
+
+  <!-- GUIDE VIEW -->
+  <div class="view" id="view-guide">
+    <div class="cat-tabs" id="guideCatTabs">
+      <button class="cat-tab active" data-cat="Push">Push</button>
+      <button class="cat-tab" data-cat="Pull">Pull</button>
+      <button class="cat-tab" data-cat="Legs">Legs</button>
+    </div>
+    <div id="guideGrid" class="guide-grid"></div>
+  </div>
+
+  <!-- WORKOUT PLAN OVERLAY -->
+  <div class="overlay" id="planOverlay" style="display:none;">
+    <div class="modal-card" style="max-width:400px;">
+      <button class="close-modal-btn" id="closePlanBtn" aria-label="Close">&times;</button>
+      <div id="planFormView">
+        <h2>Build your plan</h2>
+        <p class="desc">A few quick questions, then Kinetix builds it.</p>
+
+        <div class="plan-form-row">
+          <label class="field-label">Main goal</label>
+          <div class="lift-select" id="planGoalRow">
+            <button class="lift-pill active" data-val="Build muscle">Build muscle</button>
+            <button class="lift-pill" data-val="Get stronger">Get stronger</button>
+            <button class="lift-pill" data-val="General fitness">General fitness</button>
+          </div>
+        </div>
+
+        <div class="plan-form-row">
+          <label class="field-label">Days per week</label>
+          <div class="lift-select" id="planDaysRow">
+            <button class="lift-pill" data-val="2">2</button>
+            <button class="lift-pill active" data-val="3">3</button>
+            <button class="lift-pill" data-val="4">4</button>
+            <button class="lift-pill" data-val="5">5</button>
+          </div>
+        </div>
+
+        <div class="plan-form-row">
+          <label class="field-label">Experience</label>
+          <div class="lift-select" id="planLevelRow">
+            <button class="lift-pill active" data-val="Beginner">Beginner</button>
+            <button class="lift-pill" data-val="Some experience">Some experience</button>
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="generatePlanBtn" style="width:100%; padding:13px;">Generate plan &rarr;</button>
+      </div>
+
+      <div id="planLoadingView" style="display:none;">
+        <div class="loading-block">
+          <div class="spinner"></div>
+          <div class="loading-text">BUILDING YOUR PLAN...</div>
+        </div>
+      </div>
+
+      <div id="planResultView" style="display:none;">
+        <h2 id="planResultTitle">Your plan</h2>
+        <div class="plan-overlay-content" id="planResultContent"></div>
+        <button class="btn btn-ghost" id="planStartOverBtn" style="width:100%; margin-top:14px;">Build another</button>
+      </div>
+
+      <div id="planErrorView" class="error-box" style="display:none; margin-top:14px;"></div>
+    </div>
+  </div>
+
+  <!-- GUIDE DETAIL OVERLAY -->
+  <div class="overlay" id="guideDetailOverlay" style="display:none;">
+    <div class="modal-card" style="max-width:400px;">
+      <button class="close-modal-btn" id="closeGuideDetailBtn" aria-label="Close">&times;</button>
+      <div id="guideDetailIcon" class="guide-detail-icon"></div>
+      <h2 id="guideDetailTitle">Exercise</h2>
+      <div id="guideDetailSteps"></div>
+    </div>
+  </div>
+
+  <!-- HISTORY VIEW -->
+  <div class="view" id="view-history">
+    <div class="section-label">All sessions</div>
+    <div id="historyList"></div>
+  </div>
+
+  <!-- PROFILE VIEW -->
+  <div class="view" id="view-profile">
+    <div class="profile-card">
+      <label class="field-label" for="profileNameInput">Your name</label>
+      <input class="text-input" id="profileNameInput" type="text" />
+      <button class="btn btn-ghost" id="saveNameBtn">Save name</button>
+    </div>
+
+    <div class="profile-card">
+      <label class="field-label" for="apiKeyInput">Gemini API key</label>
+      <input class="text-input" id="apiKeyInput" type="password" placeholder="Paste your key here" autocomplete="off" autocapitalize="off" spellcheck="false" />
+      <button class="btn btn-ghost" id="saveApiKeyBtn">Save key</button>
+      <p style="font-size:12px; color:var(--text-dim); margin-top:10px; line-height:1.5;">Get a free key at aistudio.google.com/apikey. This is stored only on this device, never sent anywhere except directly to Google when you analyze a rep.</p>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-btn active" data-view="home"><span class="icon">&#8962;</span>Home</button>
+    <button class="nav-btn" data-view="analyze"><span class="icon">&#9673;</span>Analyze</button>
+    <button class="nav-btn" data-view="guide"><span class="icon">&#9670;</span>Guide</button>
+    <button class="nav-btn" data-view="history"><span class="icon">&#9776;</span>History</button>
+    <button class="nav-btn" data-view="profile"><span class="icon">&#9881;</span>Profile</button>
+  </div>
+</div>
+
+<script>
+  // ================= API KEY CONFIG =================
+  // For PRIVATE TESTING ONLY — paste your own Google Gemini API key below.
+  // Get a FREE key at aistudio.google.com/apikey — no card, no billing needed.
+  // Never share this file publicly or post it online with a real key inside it.
+  const API_KEY = "PASTE_YOUR_GEMINI_KEY_HERE";
+
+  // ================= STATE =================
+  const CATEGORIES = {
+    Push: ['Bench Press', 'Overhead Press', 'Dumbbell Shoulder Press', 'Chest Press Machine', 'Tricep Extension', 'Dips'],
+    Pull: ['Deadlift', 'Lat Pulldown', 'Cable Row', 'Pull-Up', 'Bicep Curl', 'Barbell Row', 'Face Pull'],
+    Legs: ['Squat', 'Romanian Deadlift', 'Lunge', 'Leg Press', 'Leg Extension', 'Leg Curl', 'Hip Thrust', 'Calf Raise']
+  };
+
+  let currentCat = 'Push';
+  let selectedLift = CATEGORIES[currentCat][0];
+  let currentMode = "upload";
+  let videoBlob = null;
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let stream = null;
+
+  let currentUser = null;
+  let currentSettings = { theme: 'light', accent: '#3D5AFE' };
+  let historyData = [];
+
+  // ================= ELEMENT REFS =================
+  const onboardOverlay = document.getElementById('onboardOverlay');
+  const nameInput = document.getElementById('nameInput');
+  const step1NextBtn = document.getElementById('step1NextBtn');
+  const onboardStep1 = document.getElementById('onboardStep1');
+  const onboardStep2 = document.getElementById('onboardStep2');
+  const goalGrid = document.getElementById('goalGrid');
+  const finishOnboardBtn = document.getElementById('finishOnboardBtn');
+  const stepDots = document.querySelectorAll('.step-dot');
+
+  const avatarBtn = document.getElementById('avatarBtn');
+  const topbarTitle = document.getElementById('topbarTitle');
+  const navBtns = document.querySelectorAll('.nav-btn');
+  const views = { home: document.getElementById('view-home'), analyze: document.getElementById('view-analyze'), guide: document.getElementById('view-guide'), history: document.getElementById('view-history'), profile: document.getElementById('view-profile') };
+
+  const homeGreeting = document.getElementById('homeGreeting');
+  const statTotal = document.getElementById('statTotal');
+  const statStreak = document.getElementById('statStreak');
+  const statFocus = document.getElementById('statFocus');
+  const ctaAnalyze = document.getElementById('ctaAnalyze');
+  const recentList = document.getElementById('recentList');
+  const historyList = document.getElementById('historyList');
+
+  const profileNameInput = document.getElementById('profileNameInput');
+  const saveNameBtn = document.getElementById('saveNameBtn');
+  const apiKeyInput = document.getElementById('apiKeyInput');
+  const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+  let userApiKey = "";
+
+  const catTabs = document.getElementById('catTabs');
+  const liftSelect = document.getElementById('liftSelect');
+  const modeToggle = document.getElementById('modeToggle');
+  const uploadPane = document.getElementById('uploadPane');
+  const recordPane = document.getElementById('recordPane');
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const liveVideo = document.getElementById('liveVideo');
+  const previewWrap = document.getElementById('previewWrap');
+  const previewVideo = document.getElementById('previewVideo');
+  const startRecBtn = document.getElementById('startRecBtn');
+  const stopRecBtn = document.getElementById('stopRecBtn');
+  const analyzeRow = document.getElementById('analyzeRow');
+  const fileInfo = document.getElementById('fileInfo');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const loadingBlock = document.getElementById('loadingBlock');
+  const loadingText = document.getElementById('loadingText');
+  const errorBox = document.getElementById('errorBox');
+  const resultsEl = document.getElementById('results');
+
+  // ================= NAV =================
+  function switchView(name) {
+    Object.keys(views).forEach(k => views[k].classList.toggle('active', k === name));
+    navBtns.forEach(b => b.classList.toggle('active', b.dataset.view === name));
+    topbarTitle.textContent = name.charAt(0).toUpperCase() + name.slice(1);
+    if (name === 'history') renderHistory();
+    if (name === 'home') renderHome();
+    if (name === 'guide') renderGuide();
+  }
+  navBtns.forEach(b => b.addEventListener('click', () => switchView(b.dataset.view)));
+  ctaAnalyze.addEventListener('click', () => switchView('analyze'));
+  avatarBtn.addEventListener('click', () => switchView('profile'));
+
+  // ================= THEME / SETTINGS =================
+  function hexToRgba(hex, alpha) {
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    return `rgba(${r},${g},${b},${alpha})`;
+  }
+  function shadeColor(hex, percent) {
+    const num = parseInt(hex.slice(1),16);
+    const amt = Math.round(2.55*percent);
+    const R = Math.max(0, (num>>16) + amt);
+    const G = Math.max(0, (num>>8 & 0x00FF) + amt);
+    const B = Math.max(0, (num & 0x0000FF) + amt);
+    return "#" + (0x1000000 + Math.min(255,R)*0x10000 + Math.min(255,G)*0x100 + Math.min(255,B)).toString(16).slice(1);
+  }
+  function applySettings(s) {
+    // Kinetix now uses one fixed signature look — nothing to apply per-user.
+  }
+
+  saveNameBtn.addEventListener('click', async () => {
+    const name = profileNameInput.value.trim();
+    if (!name) return;
+    currentUser.name = name;
+    try { await window.storage.set('kinetix-user', JSON.stringify(currentUser)); } catch (e) { console.error(e); }
+    avatarBtn.textContent = name.charAt(0).toUpperCase();
+    renderHome();
+  });
+
+  saveApiKeyBtn.addEventListener('click', async () => {
+    const key = apiKeyInput.value.trim();
+    if (!key) return;
+    userApiKey = key;
+    try {
+      await window.storage.set('kinetix-api-key', key);
+      saveApiKeyBtn.textContent = 'Saved \u2713';
+      setTimeout(() => { saveApiKeyBtn.textContent = 'Save key'; }, 1500);
+    } catch (e) { console.error(e); }
+  });
+
+  // ================= ONBOARDING =================
+  let selectedGoal = 'All';
+  step1NextBtn.addEventListener('click', () => {
+    const name = nameInput.value.trim();
+    if (!name) { nameInput.focus(); return; }
+    currentUser = { name, goal: 'All' };
+    onboardStep1.style.display = 'none';
+    onboardStep2.style.display = 'block';
+    stepDots[0].classList.remove('active'); stepDots[1].classList.add('active');
+  });
+  nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') step1NextBtn.click(); });
+
+  goalGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.goal-opt');
+    if (!btn) return;
+    [...goalGrid.children].forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    selectedGoal = btn.dataset.goal;
+  });
+
+  finishOnboardBtn.addEventListener('click', async () => {
+    currentUser.goal = selectedGoal;
+    try { await window.storage.set('kinetix-user', JSON.stringify(currentUser)); } catch (e) { console.error(e); }
+    avatarBtn.textContent = currentUser.name.charAt(0).toUpperCase();
+    profileNameInput.value = currentUser.name;
+    onboardOverlay.style.display = 'none';
+    renderHome();
+  });
+
+  // ================= HOME / STATS =================
+  function computeStreak(dates) {
+    if (!dates.length) return 0;
+    const daySet = new Set(dates.map(d => new Date(d).toDateString()));
+    let streak = 0;
+    let cursor = new Date();
+    while (daySet.has(cursor.toDateString())) {
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }
+
+  function topFocus() {
+    if (!historyData.length) return currentUser && currentUser.goal ? currentUser.goal : '—';
+    const counts = {};
+    historyData.forEach(h => { counts[h.category] = (counts[h.category] || 0) + 1; });
+    return Object.keys(counts).sort((a,b) => counts[b]-counts[a])[0];
+  }
+
+  function renderHome() {
+    homeGreeting.textContent = currentUser && currentUser.name ? `Hey ${currentUser.name}` : 'Hey there';
+    statTotal.textContent = historyData.length;
+    statStreak.textContent = computeStreak(historyData.map(h => h.date));
+    statFocus.textContent = topFocus();
+
+    if (!historyData.length) {
+      recentList.innerHTML = `<div class="empty-state">No sessions yet — analyze your first rep to see it here.</div>`;
+      return;
+    }
+    const recent = [...historyData].sort((a,b) => new Date(b.date)-new Date(a.date)).slice(0,3);
+    recentList.innerHTML = recent.map(h => historyItemHtml(h, false)).join('');
+  }
+
+  function severityDots(cues) {
+    return (cues || []).map(c => `<span class="sdot ${c.severity || 'minor'}"></span>`).join('');
+  }
+
+  function historyItemHtml(h, expandable) {
+    const d = new Date(h.date);
+    const dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    return `
+      <div class="history-item" data-id="${h.id}">
+        <div class="history-item-top">
+          <span class="ex-name">${escapeHtml(h.exercise)}</span>
+          <span class="ex-date">${dateStr}</span>
+        </div>
+        <div class="severity-dots">${severityDots(h.cues)}</div>
+        ${expandable ? `<div class="history-detail">
+          <div class="overall-text">${escapeHtml(h.overall)}</div>
+          ${(h.cues||[]).map(c => `<div class="mini-cue"><strong>${escapeHtml(c.issue)}:</strong> ${escapeHtml(c.detail)}</div>`).join('')}
+        </div>` : ''}
+      </div>
+    `;
+  }
+
+  function renderHistory() {
+    if (!historyData.length) {
+      historyList.innerHTML = `<div class="empty-state">Nothing here yet — your analyzed reps will show up in this list.</div>`;
+      return;
+    }
+    const sorted = [...historyData].sort((a,b) => new Date(b.date)-new Date(a.date));
+    historyList.innerHTML = sorted.map(h => historyItemHtml(h, true)).join('');
+    historyList.querySelectorAll('.history-item').forEach(item => {
+      item.addEventListener('click', () => item.classList.toggle('expanded'));
+    });
+  }
+
+  // ================= LOAD =================
+  async function loadAll() {
+    try {
+      const userRes = await window.storage.get('kinetix-user');
+      if (userRes && userRes.value) currentUser = JSON.parse(userRes.value);
+    } catch (e) { currentUser = null; }
+
+    try {
+      const settingsRes = await window.storage.get('kinetix-settings');
+      if (settingsRes && settingsRes.value) currentSettings = JSON.parse(settingsRes.value);
+    } catch (e) { /* defaults */ }
+
+    try {
+      const historyRes = await window.storage.get('kinetix-history');
+      if (historyRes && historyRes.value) historyData = JSON.parse(historyRes.value);
+    } catch (e) { historyData = []; }
+
+    try {
+      const keyRes = await window.storage.get('kinetix-api-key');
+      if (keyRes && keyRes.value) { userApiKey = keyRes.value; apiKeyInput.value = keyRes.value; }
+    } catch (e) { userApiKey = ""; }
+
+    applySettings(currentSettings);
+
+    if (currentUser && currentUser.name) {
+      avatarBtn.textContent = currentUser.name.charAt(0).toUpperCase();
+      profileNameInput.value = currentUser.name;
+      onboardOverlay.style.display = 'none';
+      renderHome();
+    } else {
+      onboardOverlay.style.display = 'flex';
+    }
+  }
+  loadAll();
+
+  // ================= EXERCISE PICKER =================
+  function renderLiftPills() {
+    liftSelect.innerHTML = CATEGORIES[currentCat].map((name, i) =>
+      `<button class="lift-pill ${i === 0 ? 'active' : ''}" data-lift="${name}">${name}</button>`
+    ).join('');
+    selectedLift = CATEGORIES[currentCat][0];
+  }
+  renderLiftPills();
+
+  catTabs.addEventListener('click', (e) => {
+    const btn = e.target.closest('.cat-tab');
+    if (!btn) return;
+    [...catTabs.children].forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    currentCat = btn.dataset.cat;
+    renderLiftPills();
+  });
+
+  liftSelect.addEventListener('click', (e) => {
+    const btn = e.target.closest('.lift-pill');
+    if (!btn) return;
+    [...liftSelect.children].forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    selectedLift = btn.dataset.lift;
+  });
+
+  modeToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mode-btn');
+    if (!btn) return;
+    [...modeToggle.children].forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    currentMode = btn.dataset.mode;
+    uploadPane.style.display = currentMode === 'upload' ? 'block' : 'none';
+    recordPane.style.display = currentMode === 'record' ? 'block' : 'none';
+    resetCapture();
+  });
+
+  dropZone.addEventListener('click', () => fileInput.click());
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', (e) => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+  function handleFile(file) {
+    videoBlob = file;
+    showPreview(URL.createObjectURL(file));
+    fileInfo.textContent = `${selectedLift.toUpperCase()} · ${(file.size/1024/1024).toFixed(1)} MB`;
+  }
+  function showPreview(url) {
+    previewVideo.src = url;
+    previewWrap.style.display = 'block';
+    analyzeRow.style.display = 'flex';
+    resultsEl.style.display = 'none';
+    errorBox.style.display = 'none';
+  }
+
+  startRecBtn.addEventListener('click', async () => {
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      liveVideo.srcObject = stream;
+      recordedChunks = [];
+      mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        videoBlob = new Blob(recordedChunks, { type: 'video/webm' });
+        showPreview(URL.createObjectURL(videoBlob));
+        fileInfo.textContent = `${selectedLift.toUpperCase()} · recorded clip`;
+        stream.getTracks().forEach(t => t.stop());
+        recordPane.style.display = 'none';
+      };
+      mediaRecorder.start();
+      startRecBtn.style.display = 'none';
+      stopRecBtn.style.display = 'inline-block';
+    } catch (err) {
+      errorBox.textContent = "Couldn't access your camera — check permissions, or switch to Upload video instead.";
+      errorBox.style.display = 'block';
+    }
+  });
+  stopRecBtn.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    stopRecBtn.style.display = 'none';
+    startRecBtn.style.display = 'inline-block';
+  });
+  clearBtn.addEventListener('click', resetCapture);
+
+  function resetCapture() {
+    videoBlob = null;
+    fileInput.value = '';
+    previewWrap.style.display = 'none';
+    analyzeRow.style.display = 'none';
+    resultsEl.style.display = 'none';
+    errorBox.style.display = 'none';
+    loadingBlock.style.display = 'none';
+    if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+    startRecBtn.style.display = 'inline-block';
+    stopRecBtn.style.display = 'none';
+    if (currentMode === 'record') recordPane.style.display = 'block';
+  }
+
+  function seekTo(video, t) {
+    return new Promise((resolve) => {
+      function onSeeked() { video.removeEventListener('seeked', onSeeked); resolve(); }
+      video.addEventListener('seeked', onSeeked);
+      video.currentTime = t;
+    });
+  }
+
+  async function extractFrames(blob, count = 5) {
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    video.setAttribute('playsinline', '');
+    video.setAttribute('webkit-playsinline', '');
+    video.preload = 'auto';
+    // iOS Safari only reliably fires loadedmetadata for elements attached to the DOM
+    video.style.position = 'fixed';
+    video.style.top = '-9999px';
+    video.style.width = '1px';
+    video.style.height = '1px';
+    document.body.appendChild(video);
+
+    try {
+      const objectUrl = URL.createObjectURL(blob);
+      video.src = objectUrl;
+
+      await new Promise((resolve, reject) => {
+        let settled = false;
+        const onReady = () => { if (!settled && video.videoWidth > 0) { settled = true; resolve(); } };
+        video.addEventListener('loadedmetadata', onReady);
+        video.addEventListener('loadeddata', onReady);
+        video.addEventListener('canplay', onReady);
+        video.addEventListener('error', () => {
+          if (!settled) { settled = true; reject(new Error('metadata')); }
+        });
+        video.load();
+        // Safety timeout in case no event fires but the video is actually usable
+        setTimeout(() => { if (!settled) { settled = true; video.videoWidth > 0 ? resolve() : reject(new Error('metadata')); } }, 4000);
+      });
+
+      if (!video.videoWidth || !video.videoHeight) throw new Error('metadata');
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.min(video.videoWidth, 640);
+      canvas.height = Math.round(canvas.width * (video.videoHeight / video.videoWidth));
+      const ctx = canvas.getContext('2d');
+      const duration = video.duration;
+      const frames = [];
+      for (let i = 0; i < count; i++) {
+        const t = (duration / (count + 1)) * (i + 1);
+        await seekTo(video, t);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        frames.push(canvas.toDataURL('image/jpeg', 0.7).split(',')[1]);
+      }
+      return frames;
+    } finally {
+      document.body.removeChild(video);
+    }
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!videoBlob) return;
+    analyzeRow.style.display = 'none';
+    resultsEl.style.display = 'none';
+    errorBox.style.display = 'none';
+    loadingBlock.style.display = 'flex';
+
+    try {
+      loadingText.textContent = 'READING FRAMES...';
+      const frames = await extractFrames(videoBlob, 5);
+
+      loadingText.textContent = 'ANALYZING FORM...';
+      const content = [
+        {
+          type: 'text',
+          text: `You are Kinetix, an AI weightlifting form coach. These ${frames.length} images are sequential frames from a video of someone performing a ${selectedLift}, in time order. Look closely at joint angles, path of motion, back/torso position, and range of motion across the frames. Respond with ONLY valid JSON, no markdown fences, no preamble, in exactly this shape:
+{"overall":"one direct sentence summarizing their form","cues":[{"issue":"short label, 2-5 words","detail":"one specific, actionable sentence describing what you observed and how to fix it","severity":"good|minor|major"}],"encouragement":"one short encouraging sentence"}
+Give between 2 and 4 cues. Be specific and honest, like a real coach watching closely — reference what you actually see changing across the frames, not generic advice. If the images don't clearly show a ${selectedLift} or a person exercising, say so honestly in "overall" and give an empty cues array.`
+        },
+        ...frames.map(f => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: f } }))
+      ];
+
+      const activeKey = userApiKey || (API_KEY !== "PASTE_YOUR_GEMINI_KEY_HERE" ? API_KEY : "");
+      if (!activeKey) {
+        throw new Error('NO_API_KEY');
+      }
+
+      // Convert the shared "content" blocks into Gemini's "parts" format
+      const parts = content.map(block => {
+        if (block.type === 'text') return { text: block.text };
+        if (block.type === 'image') return { inline_data: { mime_type: block.source.media_type, data: block.source.data } };
+        return null;
+      }).filter(Boolean);
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-goog-api-key': activeKey
+          },
+          body: JSON.stringify({ contents: [{ parts }] })
+        }
+      );
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.error('API error:', errBody);
+        throw new Error('HTTP ' + response.status + ': ' + errBody.slice(0, 200));
+      }
+      const data = await response.json();
+      const text = data.candidates[0].content.parts.map(p => p.text || '').join('').trim();
+      const clean = text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+
+      await saveHistoryEntry(parsed);
+      renderResults(parsed);
+    } catch (err) {
+      console.error(err);
+      loadingBlock.style.display = 'none';
+      analyzeRow.style.display = 'flex';
+      if (err.message === 'NO_API_KEY') {
+        errorBox.textContent = "No API key set yet — go to Profile and paste your free Gemini API key in there.";
+      } else {
+        // TEMPORARY: showing the real error so we can diagnose it. We'll put the friendly message back once this is fixed.
+        errorBox.textContent = "DEBUG INFO — please screenshot this: " + (err && err.message ? err.message : String(err));
+      }
+      errorBox.style.display = 'block';
+    }
+  });
+
+  async function saveHistoryEntry(parsed) {
+    const entry = {
+      id: 'h_' + Date.now(),
+      exercise: selectedLift,
+      category: currentCat,
+      date: new Date().toISOString(),
+      overall: parsed.overall || '',
+      cues: parsed.cues || [],
+      encouragement: parsed.encouragement || ''
+    };
+    historyData.push(entry);
+    try { await window.storage.set('kinetix-history', JSON.stringify(historyData)); } catch (e) { console.error(e); }
+  }
+
+  function renderResults(data) {
+    loadingBlock.style.display = 'none';
+    const cuesHtml = (data.cues || []).map(c => `
+      <div class="cue">
+        <span class="cue-badge ${c.severity || 'minor'}">${(c.severity || 'minor')}</span>
+        <div class="cue-body">
+          <strong>${escapeHtml(c.issue || '')}</strong>
+          <span>${escapeHtml(c.detail || '')}</span>
+        </div>
+      </div>
+    `).join('');
+
+    resultsEl.innerHTML = `
+      <div class="overall">${escapeHtml(data.overall || '')}</div>
+      ${cuesHtml}
+      ${data.encouragement ? `<div class="encouragement">${escapeHtml(data.encouragement)}</div>` : ''}
+      <div class="reset-row">
+        <button class="btn btn-ghost" id="analyzeAgainBtn">Analyze another rep</button>
+      </div>
+    `;
+    resultsEl.style.display = 'block';
+    document.getElementById('analyzeAgainBtn').addEventListener('click', resetCapture);
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+
+  // ================= GUIDE =================
+  const CATEGORY_ICONS = {
+    Push: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" stroke="url(#g1)" stroke-width="2"/><path d="M12 20h16M24 14l6 6-6 6" stroke="url(#g1)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g1" x1="0" y1="0" x2="40" y2="40"><stop stop-color="#C4B5FD"/><stop offset="1" stop-color="#67E8F9"/></linearGradient></defs></svg>`,
+    Pull: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" stroke="url(#g2)" stroke-width="2"/><path d="M28 20H12M16 14l-6 6 6 6" stroke="url(#g2)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g2" x1="0" y1="0" x2="40" y2="40"><stop stop-color="#C4B5FD"/><stop offset="1" stop-color="#67E8F9"/></linearGradient></defs></svg>`,
+    Legs: `<svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="20" cy="20" r="18" stroke="url(#g3)" stroke-width="2"/><path d="M20 12v8M20 28l-5-8M20 28l5-8" stroke="url(#g3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><defs><linearGradient id="g3" x1="0" y1="0" x2="40" y2="40"><stop stop-color="#C4B5FD"/><stop offset="1" stop-color="#67E8F9"/></linearGradient></defs></svg>`
+  };
+
+  const EXERCISE_INFO = {
+    'Bench Press': ['Lie flat, feet planted, shoulder blades pulled back and down.', 'Lower the bar under control to mid-chest, elbows at roughly 45 degrees.', 'Press up in a straight line without locking out aggressively.', 'Keep your back flat on the bench throughout — no excessive arching.'],
+    'Overhead Press': ['Stand with feet hip-width, core braced, bar at collarbone height.', 'Press straight up, moving your head slightly back then through.', 'Lock out with the bar over your mid-foot, not out in front.', 'Avoid leaning back excessively to compensate for weight.'],
+    'Dumbbell Shoulder Press': ['Sit or stand with dumbbells at shoulder height, palms forward.', 'Press up and slightly in until the dumbbells nearly touch overhead.', 'Lower with control back to shoulder height.', 'Keep your ribs down — don\'t flare them to gain range of motion.'],
+    'Chest Press Machine': ['Set the seat so handles line up with mid-chest.', 'Push forward smoothly without locking elbows hard at the top.', 'Control the return — don\'t let the weight stack slam.', 'Keep shoulder blades pinned back against the pad.'],
+    'Tricep Extension': ['Keep elbows tucked close to your head, not flaring out.', 'Lower the weight behind your head with control.', 'Extend fully without swinging your torso for momentum.', 'Move only at the elbow joint throughout.'],
+    'Dips': ['Start with arms locked, body slightly leaning forward.', 'Lower until shoulders are about level with elbows.', 'Push back up without flaring elbows out wide.', 'Keep the movement controlled, not bouncing at the bottom.'],
+    'Deadlift': ['Bar over mid-foot, shins close to the bar, hips back.', 'Flat back, chest up, take the slack out of the bar before pulling.', 'Drive through the floor, hips and shoulders rising together.', 'Lock out with hips fully extended, don\'t hyperextend the back.'],
+    'Lat Pulldown': ['Grip slightly wider than shoulders, sit tall, slight lean back.', 'Pull the bar to your upper chest, leading with your elbows.', 'Squeeze your shoulder blades together at the bottom.', 'Control the weight back up — don\'t let it yank your arms.'],
+    'Cable Row': ['Sit tall, slight forward lean before the pull, knees soft.', 'Pull the handle to your torso, elbows tracking close to your body.', 'Squeeze shoulder blades together, avoid using momentum.', 'Return with control, letting your shoulders stretch forward slightly.'],
+    'Pull-Up': ['Start from a dead hang, shoulders engaged.', 'Pull your chin over the bar, leading with your chest.', 'Avoid excessive kipping or swinging.', 'Lower fully under control to a dead hang each rep.'],
+    'Bicep Curl': ['Elbows pinned to your sides throughout the movement.', 'Curl with control, avoiding swinging the torso.', 'Squeeze at the top without excessive wrist flexion.', 'Lower slowly rather than dropping the weight.'],
+    'Barbell Row': ['Hinge at the hips, flat back, bar close to your shins.', 'Pull the bar to your lower ribs, elbows driving back.', 'Avoid jerking the weight up with your lower back.', 'Lower with control back to the start position each rep.'],
+    'Face Pull': ['Set the cable at head height, step back for tension.', 'Pull towards your face, elbows high and wide.', 'Rotate your hands so knuckles finish facing behind you.', 'Focus on squeezing your rear shoulders, not your arms.'],
+    'Squat': ['Feet shoulder-width, bar on your upper back, chest tall.', 'Break at the hips and knees together, tracking knees over toes.', 'Descend until hips are at or below knee level if mobility allows.', 'Drive up through mid-foot, hips and chest rising together.'],
+    'Romanian Deadlift': ['Start standing, slight bend in the knees, bar close to thighs.', 'Push your hips back while keeping the bar close to your legs.', 'Lower until you feel a stretch in your hamstrings, back flat.', 'Drive hips forward to return to standing, avoid rounding your back.'],
+    'Lunge': ['Step forward, lowering until both knees are near 90 degrees.', 'Keep your front knee tracking over your foot, not caving in.', 'Push through your front heel to return to standing.', 'Keep your torso upright rather than leaning forward.'],
+    'Leg Press': ['Feet shoulder-width on the platform, lower back flat on the pad.', 'Lower until your knees reach about 90 degrees.', 'Avoid letting your lower back round off the pad at the bottom.', 'Press through your whole foot, don\'t lock knees out hard.'],
+    'Leg Extension': ['Adjust the pad to sit just above your ankles.', 'Extend your legs fully without jerking the weight up.', 'Pause briefly at the top, then lower with control.', 'Avoid swinging your torso to assist the movement.'],
+    'Leg Curl': ['Position the pad just above your heels, hips flat on the bench/seat.', 'Curl your heels toward your glutes under control.', 'Avoid lifting your hips off the bench to cheat the rep.', 'Lower slowly rather than letting the weight drop.'],
+    'Hip Thrust': ['Upper back on the bench, bar over your hips, feet flat.', 'Drive through your heels, squeezing your glutes at the top.', 'Avoid overextending your lower back at the top of the movement.', 'Lower with control back to the start position.'],
+    'Calf Raise': ['Stand with the balls of your feet on the platform edge.', 'Lower your heels for a full stretch at the bottom.', 'Rise as high as possible, pausing briefly at the top.', 'Avoid bouncing — control both the up and down phase.']
+  };
+
+  const guideCatTabs = document.getElementById('guideCatTabs');
+  const guideGrid = document.getElementById('guideGrid');
+  const guideDetailOverlay = document.getElementById('guideDetailOverlay');
+  const guideDetailIcon = document.getElementById('guideDetailIcon');
+  const guideDetailTitle = document.getElementById('guideDetailTitle');
+  const guideDetailSteps = document.getElementById('guideDetailSteps');
+  const closeGuideDetailBtn = document.getElementById('closeGuideDetailBtn');
+  let guideCat = 'Push';
+
+  function renderGuide() {
+    guideGrid.innerHTML = CATEGORIES[guideCat].map(name => `
+      <div class="guide-card" data-ex="${name}">
+        <div class="guide-card-icon">${CATEGORY_ICONS[guideCat]}</div>
+        <div class="guide-card-name">${escapeHtml(name)}</div>
+      </div>
+    `).join('');
+  }
+  guideCatTabs.addEventListener('click', (e) => {
+    const btn = e.target.closest('.cat-tab');
+    if (!btn) return;
+    [...guideCatTabs.children].forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    guideCat = btn.dataset.cat;
+    renderGuide();
+  });
+  guideGrid.addEventListener('click', (e) => {
+    const card = e.target.closest('.guide-card');
+    if (!card) return;
+    const ex = card.dataset.ex;
+    guideDetailIcon.innerHTML = CATEGORY_ICONS[guideCat];
+    guideDetailTitle.textContent = ex;
+    const steps = EXERCISE_INFO[ex] || [];
+    guideDetailSteps.innerHTML = steps.map((s, i) => `
+      <div class="guide-step"><span class="step-num">0${i+1}</span><span>${escapeHtml(s)}</span></div>
+    `).join('');
+    guideDetailOverlay.style.display = 'flex';
+  });
+  closeGuideDetailBtn.addEventListener('click', () => { guideDetailOverlay.style.display = 'none'; });
+  guideDetailOverlay.addEventListener('click', (e) => { if (e.target === guideDetailOverlay) guideDetailOverlay.style.display = 'none'; });
+
+
+
+  // ================= PROGRESS CHART (Home) =================
+  function renderProgressChart() {
+    const chartEl = document.getElementById('progressChart');
+    if (!chartEl) return;
+
+    // Build last 6 week buckets (Mon-based), counting sessions per week
+    const now = new Date();
+    const weeks = [];
+    for (let i = 5; i >= 0; i--) {
+      const end = new Date(now); end.setDate(now.getDate() - (i * 7));
+      const start = new Date(end); start.setDate(end.getDate() - 6);
+      weeks.push({ start, end, count: 0 });
+    }
+    historyData.forEach(h => {
+      const d = new Date(h.date);
+      for (const w of weeks) { if (d >= w.start && d <= w.end) { w.count++; break; } }
+    });
+
+    if (!historyData.length) {
+      chartEl.innerHTML = `<div class="empty-state">Your weekly session count will show up here once you've logged a few analyses.</div>`;
+      return;
+    }
+
+    const max = Math.max(1, ...weeks.map(w => w.count));
+    chartEl.innerHTML = `<div class="progress-bars">` + weeks.map((w, i) => {
+      const heightPct = Math.max(6, Math.round((w.count / max) * 100));
+      const label = i === 5 ? 'This wk' : `-${5 - i}w`;
+      return `<div class="progress-bar-col">
+        <div class="progress-bar-fill" style="height:${heightPct}%;" title="${w.count} session(s)"></div>
+        <div class="progress-bar-label">${label}</div>
+      </div>`;
+    }).join('') + `</div>`;
+  }
+
+  const _origRenderHome = renderHome;
+  renderHome = function() {
+    _origRenderHome();
+    renderProgressChart();
+  };
+
+  // ================= WORKOUT PLAN GENERATOR =================
+  const ctaPlan = document.getElementById('ctaPlan');
+  const planOverlay = document.getElementById('planOverlay');
+  const closePlanBtn = document.getElementById('closePlanBtn');
+  const planFormView = document.getElementById('planFormView');
+  const planLoadingView = document.getElementById('planLoadingView');
+  const planResultView = document.getElementById('planResultView');
+  const planErrorView = document.getElementById('planErrorView');
+  const planGoalRow = document.getElementById('planGoalRow');
+  const planDaysRow = document.getElementById('planDaysRow');
+  const planLevelRow = document.getElementById('planLevelRow');
+  const generatePlanBtn = document.getElementById('generatePlanBtn');
+  const planResultContent = document.getElementById('planResultContent');
+  const planStartOverBtn = document.getElementById('planStartOverBtn');
+
+  let planGoal = 'Build muscle', planDays = '3', planLevel = 'Beginner';
+
+  function wirePillRow(row, setter) {
+    row.addEventListener('click', (e) => {
+      const btn = e.target.closest('.lift-pill');
+      if (!btn) return;
+      [...row.children].forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      setter(btn.dataset.val);
+    });
+  }
+  wirePillRow(planGoalRow, v => planGoal = v);
+  wirePillRow(planDaysRow, v => planDays = v);
+  wirePillRow(planLevelRow, v => planLevel = v);
+
+  ctaPlan.addEventListener('click', () => {
+    planFormView.style.display = 'block';
+    planLoadingView.style.display = 'none';
+    planResultView.style.display = 'none';
+    planErrorView.style.display = 'none';
+    planOverlay.style.display = 'flex';
+  });
+  closePlanBtn.addEventListener('click', () => { planOverlay.style.display = 'none'; });
+  planOverlay.addEventListener('click', (e) => { if (e.target === planOverlay) planOverlay.style.display = 'none'; });
+  planStartOverBtn.addEventListener('click', () => {
+    planResultView.style.display = 'none';
+    planFormView.style.display = 'block';
+  });
+
+  generatePlanBtn.addEventListener('click', async () => {
+    planFormView.style.display = 'none';
+    planErrorView.style.display = 'none';
+    planLoadingView.style.display = 'block';
+
+    try {
+      const activeKey = userApiKey || (typeof API_KEY !== 'undefined' && API_KEY !== "PASTE_YOUR_GEMINI_KEY_HERE" ? API_KEY : "");
+      if (!activeKey) throw new Error('NO_API_KEY');
+
+      const prompt = `You are Kinetix, a gym coach building a weekly workout plan. Build a ${planDays}-day-per-week plan for a ${planLevel.toLowerCase()} lifter whose main goal is "${planGoal}". Use only common gym exercises (barbell, dumbbell, cable, or machine movements). Respond with ONLY valid JSON, no markdown fences, no preamble, in exactly this shape:
+{"days":[{"title":"Day 1 — Push","exercises":[{"name":"Bench Press","sets":"3 x 8-10"}]}]}
+Each day should have 4-6 exercises with realistic sets/reps. Keep exercise names simple and common.`;
+
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-goog-api-key': activeKey },
+          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        }
+      );
+
+      if (!response.ok) {
+        const errBody = await response.text();
+        console.error('Plan API error:', errBody);
+        throw new Error('HTTP ' + response.status + ': ' + errBody.slice(0, 200));
+      }
+      const data = await response.json();
+      const text = data.candidates[0].content.parts.map(p => p.text || '').join('').trim();
+      const clean = text.replace(/```json|```/g, '').trim();
+      const parsed = JSON.parse(clean);
+
+      planResultContent.innerHTML = (parsed.days || []).map(day => `
+        <div class="plan-day">
+          <div class="plan-day-title">${escapeHtml(day.title || '')}</div>
+          ${(day.exercises || []).map(ex => `
+            <div class="plan-exercise-row">
+              <span class="plan-exercise-name">${escapeHtml(ex.name || '')}</span>
+              <span class="plan-exercise-sets">${escapeHtml(ex.sets || '')}</span>
+            </div>
+          `).join('')}
+        </div>
+      `).join('');
+
+      planLoadingView.style.display = 'none';
+      planResultView.style.display = 'block';
+    } catch (err) {
+      console.error(err);
+      planLoadingView.style.display = 'none';
+      planFormView.style.display = 'block';
+      if (err.message === 'NO_API_KEY') {
+        planErrorView.textContent = "No API key set yet — go to Profile and paste your free Gemini API key in there.";
+      } else {
+        planErrorView.textContent = "DEBUG INFO — please screenshot this: " + (err && err.message ? err.message : String(err));
+      }
+      planErrorView.style.display = 'block';
+    }
+  });
+
+</script>
+
+</body>
+</html>
